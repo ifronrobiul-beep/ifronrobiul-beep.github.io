@@ -1,51 +1,3 @@
-I understand you are having trouble with the "Backup failed" error and that you want an automatic daily backup.
-
-Let's be very clear about both points.
-
------
-
-### \#\# Automatic Daily Backups (Clarification)
-
-An **automatic daily backup system is not possible** for this application.
-
-  * **No Server**: The application is a single HTML file. It only runs in your browser when the page is open. It cannot run tasks on a schedule like a program that is always on.
-  * **Google Security**: Google's system requires you to be present and click a button to grant access for security reasons. It will not allow a fully automated, unattended backup in this type of application.
-
-The **"Backup to Drive"** button is a **one-click manual backup**. This is the best and most secure solution we can build. Let's focus on fixing the error so this button works for you.
-
------
-
-### \#\# How to Fix the "Backup Failed" Error
-
-This error almost always happens because of a missing **API Key** in your project. You have set the Client ID, but the API Key is also required for the backup function to work correctly.
-
-#### \#\#\# Your Next Step: Add the API Key
-
-1.  Go to the **Google Cloud Console** and select your project.
-
-2.  In the menu (**☰**), go to **APIs & Services** \> **Credentials**.
-
-3.  At the top, click **"+ CREATE CREDENTIALS"** and choose **"API key"**.
-
-4.  A new key will be created. Click the copy icon to copy it.
-
-5.  You will then need to **set restrictions** on this key for security.
-
-      * Click on the new API key to edit it.
-      * Under **Application restrictions**, select **"Websites"**.
-      * Under **Website restrictions**, click **"+ ADD"** and enter your GitHub Pages URL with a wildcard: `ifronrobiul-beep.github.io/*`
-      * Under **API restrictions**, select **"Restrict key"** and choose the **"Google Drive API"**.
-      * Click **"Save"**.
-
-Once you have this key, you must add it to the code.
-
------
-
-### \#\# Final Code with Your API Key
-
-I have taken the code you provided and will now add your **API Key** to it. Please replace your entire `master_dashboard.html` file with the code below.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -198,10 +150,10 @@ I have taken the code you provided and will now add your **API Key** to it. Plea
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
     const GOOGLE_CLIENT_ID = '419426378293-661bn0b9il4bvk6k3tdr30tdhbhko0tj.apps.googleusercontent.com';
-    const GOOGLE_API_KEY = 'AIzaSyCcu4YPnb3FFF5B5ip3dAnx1ZK_7KbbBJU'; // <-- API Key ADDED
+    const GOOGLE_API_KEY = 'YOUR_API_KEY_GOES_HERE'; // <-- PASTE YOUR API KEY HERE
     const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
     
-    // --- SCREEN MANAGEMENT & GLOBAL STATE ---
+    // All other JS code remains the same...
     const screens = { auth: document.getElementById('authContainer'), login: document.getElementById('loginScreen'), setup: document.getElementById('setupScreen'), recovery: document.getElementById('recoveryScreen'), dashboard: document.getElementById('toolDashboard'), vault: document.getElementById('vaultApp'), discord: document.getElementById('discordApp') };
     const showScreen = (screenName) => { Object.values(screens).forEach(s => s.classList.add('hidden')); const screenToShow = screens[screenName]; if (screenToShow) { screenToShow.classList.remove('hidden'); if (['login', 'setup', 'recovery'].includes(screenName)) { screens.auth.classList.remove('hidden'); } } };
     const vaultStorageKey = 'masterDashboardData';
@@ -212,16 +164,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const decrypt = (ciphertext, key) => CryptoJS.AES.decrypt(ciphertext, key).toString(CryptoJS.enc.Utf8);
     const hash = (text) => CryptoJS.SHA256(text).toString();
     
-    // --- GOOGLE DRIVE INTEGRATION ---
     let tokenClient;
     const driveAuthBtn = document.getElementById('driveAuthBtn');
     const driveBackupBtn = document.getElementById('driveBackupBtn');
     const driveRestoreBtn = document.getElementById('driveRestoreBtn');
     const driveStatus = document.getElementById('driveStatus');
-
     function gapiLoaded() { gapi.load('client', initializeGapiClient); }
     async function initializeGapiClient() { 
-        await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
+        if (GOOGLE_API_KEY && GOOGLE_API_KEY !== 'YOUR_API_KEY_GOES_HERE') {
+            await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
+        } else {
+            await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
+        }
     }
     function gisLoaded() {
         tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPES, callback: handleGoogleAuthResponse });
@@ -258,19 +212,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!confirm("This will overwrite your current vault. Are you sure?")) return;
         driveRestoreBtn.disabled = true; driveRestoreBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Restoring...`;
         const fileId = await findBackupFile();
-        if (!fileId) { alert("No backup file found in Google Drive."); }
-        else {
-            try {
-                const response = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-                const importedData = response.body; JSON.parse(importedData);
-                localStorage.setItem(vaultStorageKey, importedData);
-                alert("Vault restored successfully! Please log out and log back in to load the new data."); handleLogout();
-            } catch (err) { alert("Failed to restore backup."); console.error(err); }
-        }
-        driveRestoreBtn.disabled = false; driveRestoreBtn.innerHTML = `<i class="fas fa-download"></i> Restore from Drive`;
+        if (!fileId) { alert("No backup file found in Google Drive."); driveRestoreBtn.disabled = false; driveRestoreBtn.innerHTML = `<i class="fas fa-download"></i> Restore from Drive`; return; }
+        try {
+            const response = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
+            const importedData = response.body; JSON.parse(importedData);
+            localStorage.setItem(vaultStorageKey, importedData);
+            alert("Vault restored successfully! Please log out and log back in to load the new data."); handleLogout();
+        } catch (err) { alert("Failed to restore backup."); console.error(err); }
+        finally { driveRestoreBtn.disabled = false; driveRestoreBtn.innerHTML = `<i class="fas fa-download"></i> Restore from Drive`; }
     });
-
-    // --- SETUP, LOGIN, RECOVERY, NAVIGATION, and OTHER APP LOGIC ---
     const populateSecurityQuestions = () => { const q1 = document.getElementById('q1'), q2 = document.getElementById('q2'); securityQuestions.forEach(q => { q1.innerHTML += `<option value="${q}">${q}</option>`; q2.innerHTML += `<option value="${q}">${q}</option>`; }); q1.selectedIndex = 0; q2.selectedIndex = 1; };
     document.getElementById('setupForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('setupUsername').value.trim(), p = document.getElementById('setupPassword').value, q1 = document.getElementById('q1').value, a1 = document.getElementById('a1').value.trim(), q2 = document.getElementById('q2').value, a2 = document.getElementById('a2').value.trim(); if (!u || !p || !a1 || !a2 || q1 === q2) return; const d = { username: u, encryptedData: encrypt(JSON.stringify([]), p), security: { q1, q2, answersHash: hash(a1 + a2) } }; localStorage.setItem(vaultStorageKey, JSON.stringify(d)); activePassword = p; showScreen('dashboard'); });
     document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value, d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (d && d.username.toLowerCase() === u.toLowerCase()) { try { const dec = decrypt(d.encryptedData, p); if (!dec) throw new Error(); activePassword = p; passwordEntries = JSON.parse(dec); renderPasswords(); showScreen('dashboard'); document.getElementById('loginError').style.display = 'none'; e.target.reset(); } catch (err) { document.getElementById('loginError').style.display = 'block'; } } else { document.getElementById('loginError').style.display = 'block'; } });
@@ -302,4 +252,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-```
