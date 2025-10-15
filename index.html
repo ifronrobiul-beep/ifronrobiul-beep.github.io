@@ -150,7 +150,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
     const GOOGLE_CLIENT_ID = '419426378293-661bn0b9il4bvk6k3tdr30tdhbhko0tj.apps.googleusercontent.com'; // User's Client ID Added
-    const GOOGLE_API_KEY = 'YOUR_API_KEY_GOES_HERE'; // <-- IMPORTANT: PASTE YOUR API KEY HERE
+    const GOOGLE_API_KEY = 'AIzaSyCcu4YPnb3FFF5B5ip3dAnx1ZK_7KbbBJU'; // <-- IMPORTANT: PASTE YOUR API KEY HERE
     const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
     
     // --- SCREEN MANAGEMENT & GLOBAL STATE ---
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function gapiLoaded() { gapi.load('client', initializeGapiClient); }
     async function initializeGapiClient() { 
-        if (GOOGLE_API_KEY && GOOGLE_API_KEY !== 'YOUR_API_KEY_GOES_HERE') {
+        if (GOOGLE_API_KEY && GOOGLE_API_KEY !== 'AIzaSyCcu4YPnb3FFF5B5ip3dAnx1ZK_7KbbBJU') {
             await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
         } else {
             await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
