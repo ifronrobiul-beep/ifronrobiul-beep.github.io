@@ -149,11 +149,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
-    const GOOGLE_CLIENT_ID = '419426378293-661bn0b9il4bvk6k3tdr30tdhbhko0tj.apps.googleusercontent.com';
-    const GOOGLE_API_KEY = 'YOUR_API_KEY_GOES_HERE'; // <-- PASTE YOUR API KEY HERE
+    const GOOGLE_CLIENT_ID = '419426378293-661bn0b9il4bvk6k3tdr30tdhbhko0tj.apps.googleusercontent.com'; // User's Client ID Added
+    const GOOGLE_API_KEY = 'YOUR_API_KEY_GOES_HERE'; // <-- IMPORTANT: PASTE YOUR API KEY HERE
     const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
     
-    // All other JS code remains the same...
+    // --- SCREEN MANAGEMENT & GLOBAL STATE ---
     const screens = { auth: document.getElementById('authContainer'), login: document.getElementById('loginScreen'), setup: document.getElementById('setupScreen'), recovery: document.getElementById('recoveryScreen'), dashboard: document.getElementById('toolDashboard'), vault: document.getElementById('vaultApp'), discord: document.getElementById('discordApp') };
     const showScreen = (screenName) => { Object.values(screens).forEach(s => s.classList.add('hidden')); const screenToShow = screens[screenName]; if (screenToShow) { screenToShow.classList.remove('hidden'); if (['login', 'setup', 'recovery'].includes(screenName)) { screens.auth.classList.remove('hidden'); } } };
     const vaultStorageKey = 'masterDashboardData';
@@ -164,11 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const decrypt = (ciphertext, key) => CryptoJS.AES.decrypt(ciphertext, key).toString(CryptoJS.enc.Utf8);
     const hash = (text) => CryptoJS.SHA256(text).toString();
     
+    // --- GOOGLE DRIVE INTEGRATION ---
     let tokenClient;
     const driveAuthBtn = document.getElementById('driveAuthBtn');
     const driveBackupBtn = document.getElementById('driveBackupBtn');
     const driveRestoreBtn = document.getElementById('driveRestoreBtn');
     const driveStatus = document.getElementById('driveStatus');
+
     function gapiLoaded() { gapi.load('client', initializeGapiClient); }
     async function initializeGapiClient() { 
         if (GOOGLE_API_KEY && GOOGLE_API_KEY !== 'YOUR_API_KEY_GOES_HERE') {
@@ -221,6 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) { alert("Failed to restore backup."); console.error(err); }
         finally { driveRestoreBtn.disabled = false; driveRestoreBtn.innerHTML = `<i class="fas fa-download"></i> Restore from Drive`; }
     });
+    // --- SETUP, LOGIN, RECOVERY, NAVIGATION, and OTHER APP LOGIC ---
     const populateSecurityQuestions = () => { const q1 = document.getElementById('q1'), q2 = document.getElementById('q2'); securityQuestions.forEach(q => { q1.innerHTML += `<option value="${q}">${q}</option>`; q2.innerHTML += `<option value="${q}">${q}</option>`; }); q1.selectedIndex = 0; q2.selectedIndex = 1; };
     document.getElementById('setupForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('setupUsername').value.trim(), p = document.getElementById('setupPassword').value, q1 = document.getElementById('q1').value, a1 = document.getElementById('a1').value.trim(), q2 = document.getElementById('q2').value, a2 = document.getElementById('a2').value.trim(); if (!u || !p || !a1 || !a2 || q1 === q2) return; const d = { username: u, encryptedData: encrypt(JSON.stringify([]), p), security: { q1, q2, answersHash: hash(a1 + a2) } }; localStorage.setItem(vaultStorageKey, JSON.stringify(d)); activePassword = p; showScreen('dashboard'); });
     document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('loginUsername').value.trim(), p = document.getElementById('loginPassword').value, d = JSON.parse(localStorage.getItem(vaultStorageKey)); if (d && d.username.toLowerCase() === u.toLowerCase()) { try { const dec = decrypt(d.encryptedData, p); if (!dec) throw new Error(); activePassword = p; passwordEntries = JSON.parse(dec); renderPasswords(); showScreen('dashboard'); document.getElementById('loginError').style.display = 'none'; e.target.reset(); } catch (err) { document.getElementById('loginError').style.display = 'block'; } } else { document.getElementById('loginError').style.display = 'block'; } });
@@ -246,9 +249,4 @@ document.addEventListener('DOMContentLoaded', () => {
     const setLoading = (load) => { dw.sendMessageBtn.disabled = load; dw.spinner.classList.toggle('hidden', !load); };
     dw.sendMessageBtn.addEventListener('click', async () => { const url = dw.webhookUrlInput.value.trim(), content = dw.messageContentInput.value.trim(); if (!url || !content) { showStatus('Webhook URL and Message are required.', true); return; } localStorage.setItem('discordWebhookUrl', url); const payload = { content, username: dw.usernameInput.value.trim() || undefined, avatar_url: dw.avatarUrlInput.value.trim() || undefined }; setLoading(true); try { const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (res.ok) { showStatus('Message sent successfully!', false); dw.messageContentInput.value = ''; } else { const errData = await res.json(); showStatus(`Failed to send: ${errData.message || 'Unknown error'}`, true); } } catch (error) { showStatus('An error occurred.', true); } finally { setLoading(false); } });
     dw.clearFormBtn.addEventListener('click', () => { dw.messageContentInput.value = ''; dw.usernameInput.value = ''; dw.avatarUrlInput.value = ''; dw.statusMessage.classList.add('hidden'); });
-    const init = () => { if (localStorage.getItem(vaultStorageKey)) { showScreen('login'); } else { populateSecurityQuestions(); showScreen('setup'); } const gapiScript = document.createElement('script'); gapiScript.src = 'https://apis.google.com/js/api.js'; gapiScript.onload = gapiLoaded; document.body.appendChild(gapiScript); const gisScript = document.createElement('script'); gisScript.src = 'https://accounts.google.com/gsi/client'; gisScript.onload = gisLoaded; document.body.appendChild(gisScript); };
-    init();
-});
-</script>
-</body>
-</html>
+    const init = () => { if (localStorage.getItem(vaultStorageK
