@@ -149,8 +149,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
-    const GOOGLE_CLIENT_ID = '419426378293-661bn0b9il4bvk6k3tdr30tdhbhko0tj.apps.googleusercontent.com'; // User's Client ID Added
-    const GOOGLE_API_KEY = 'YOUR_API_KEY_GOES_HERE'; // <-- IMPORTANT: PASTE YOUR API KEY HERE
+    const GOOGLE_CLIENT_ID = '419426378293-661bn0b9il4bvk6k3tdr30tdhbhko0tj.apps.googleusercontent.com';
+    const GOOGLE_API_KEY = 'AIzaSyCcu4YPnb3FFF5B5ip3dAnx1ZK_7KbbBJU'; // <-- API Key ADDED
     const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
     
     // --- SCREEN MANAGEMENT & GLOBAL STATE ---
@@ -173,11 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function gapiLoaded() { gapi.load('client', initializeGapiClient); }
     async function initializeGapiClient() { 
-        if (GOOGLE_API_KEY && GOOGLE_API_KEY !== 'YOUR_API_KEY_GOES_HERE') {
-            await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
-        } else {
-            await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
-        }
+        await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); 
     }
     function gisLoaded() {
         tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPES, callback: handleGoogleAuthResponse });
@@ -250,11 +246,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('discordWebhookUrl')) { dw.webhookUrlInput.value = localStorage.getItem('discordWebhookUrl'); }
     const showStatus = (msg, err = false) => { dw.statusMessage.textContent = msg; dw.statusMessage.className = `p-4 rounded-lg text-sm text-center ${err ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`; };
     const setLoading = (load) => { dw.sendMessageBtn.disabled = load; dw.spinner.classList.toggle('hidden', !load); };
-    dw.sendMessageBtn.addEventListener('click', async () => { const url = dw.webhookUrlInput.value.trim(), content = dw.messageContentInput.value.trim(); if (!url || !content) { showStatus('Webhook URL and Message are required.', true); return; } localStorage.setItem('discordWebhookUrl', url); const payload = { content, username: dw.usernameInput.value.trim() || undefined, avatar_url: dw.avatarUrlInput.value.trim() || undefined }; setLoading(true); try { const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (res.ok) { showStatus('Message sent successfully!', false); dw.messageContentInput.value = ''; } else { const errData = await res.json(); showStatus(`Failed to send: ${errData.message || 'Unknown error'}`, true); } } catch (error) { showStatus('An error occurred.', true); } finally { setLoading(false); } });
-    dw.clearFormBtn.addEventListener('click', () => { dw.messageContentInput.value = ''; dw.usernameInput.value = ''; dw.avatarUrlInput.value = ''; dw.statusMessage.classList.add('hidden'); });
-    const init = () => { if (localStorage.getItem(vaultStorageKey)) { showScreen('login'); } else { populateSecurityQuestions(); showScreen('setup'); } const gapiScript = document.createElement('script'); gapiScript.src = 'https://apis.google.com/js/api.js'; gapiScript.onload = gapiLoaded; document.body.appendChild(gapiScript); const gisScript = document.createElement('script'); gisScript.src = 'https://accounts.google.com/gsi/client'; gisScript.onload = gisLoaded; document.body.appendChild(gisScript); };
-    init();
-});
-</script>
-</body>
-</html>
+    dw.sendMessageBtn.addEventListener('click', async () => {
